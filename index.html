@@ -62,6 +62,7 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            flex: 1;
         }
         
         input[type="text"] {
@@ -144,6 +145,7 @@
             background: white;
             border-radius: 10px;
             border: 1px solid #e0e0e0;
+            flex-wrap: wrap;
         }
         
         .filter-group {
@@ -201,7 +203,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
-            min-width: 1200px;
+            min-width: 1400px;
         }
         
         th {
@@ -227,6 +229,10 @@
             padding: 10px;
             border-bottom: 1px solid #e0e0e0;
             color: #666;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         tr:hover td {
@@ -256,9 +262,12 @@
             color: #721c24;
         }
         
-        .highlight {
-            background-color: #fff3cd !important;
-            font-weight: 600;
+        .status-delay td {
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+        
+        .status-warning td {
+            background-color: rgba(255, 193, 7, 0.05);
         }
         
         .no-data {
@@ -272,6 +281,7 @@
             text-align: center;
             padding: 40px;
             color: #667eea;
+            font-size: 16px;
         }
         
         .loading::after {
@@ -310,8 +320,8 @@
             cursor: not-allowed;
         }
         
-        .pagination span {
-            color: #666;
+        .pagination button:hover:not(:disabled) {
+            background: #f0f0f0;
         }
         
         .footer {
@@ -321,23 +331,19 @@
             font-size: 14px;
         }
         
-        .file-upload {
-            display: inline-block;
-            padding: 8px 15px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .data-source {
+            font-size: 12px;
+            color: #6c757d;
             margin-left: 15px;
-        }
-        
-        .file-upload:hover {
-            background: #45a049;
-        }
-        
-        #file-input {
-            display: none;
         }
     </style>
 </head>
@@ -347,7 +353,7 @@
         
         <div class="search-section">
             <div class="search-header">
-                <label>🔎 查询条件：</label>
+                <label>🔎 查询：</label>
                 <div class="search-input-group">
                     <input type="text" id="search-input" placeholder="请输入订单号 / 物料号 / 销售订单号" autocomplete="off">
                     <button class="btn-primary" onclick="search()">
@@ -356,10 +362,7 @@
                     <button class="btn-secondary" onclick="clearSearch()">
                         <span>🗑️</span> 清空
                     </button>
-                    <label for="file-input" class="file-upload">
-                        <span>📁</span> 更新数据
-                    </label>
-                    <input type="file" id="file-input" accept=".csv, .xlsx, .xls" onchange="handleFileUpload(this)">
+                    <span class="data-source" id="data-source">📁 数据来源：服务器自动加载</span>
                 </div>
             </div>
             
@@ -415,11 +418,11 @@
             <div class="stats-item">📊 总订单数：<span id="total-count">0</span></div>
             <div class="stats-item">✅ 正常交付：<span id="normal-count">0</span></div>
             <div class="stats-item">❌ 异常交付：<span id="abnormal-count">0</span></div>
-            <div class="stats-item">⚠️ 逾期天数：<span id="delay-count">0</span></div>
+            <div class="stats-item">⚠️ 逾期订单：<span id="delay-count">0</span></div>
         </div>
         
         <div class="table-container" id="table-container">
-            <div class="loading" id="loading">正在加载数据...</div>
+            <div class="loading" id="loading">正在加载数据，请稍候...</div>
             <table id="result-table" style="display: none;">
                 <thead id="table-header">
                     <tr>
@@ -428,19 +431,19 @@
                         <th onclick="sortTable(2)">销售订单 ⬇️</th>
                         <th>物料描述</th>
                         <th>订单数量</th>
-                        <th>已交货数量</th>
-                        <th>未收货数量</th>
-                        <th>基本开始日期</th>
-                        <th>基本完成日期</th>
-                        <th>实际完成日期</th>
+                        <th>已交货</th>
+                        <th>未收货</th>
+                        <th>开始日期</th>
+                        <th>完成日期</th>
+                        <th>实际完成</th>
                         <th>逾期天数</th>
-                        <th>是否正常交付</th>
+                        <th>交付状态</th>
                         <th>异常原因</th>
-                        <th>未正常交付责任人</th>
+                        <th>责任人</th>
                         <th>车间备注</th>
                         <th>涂布大卷</th>
                         <th>订单类型</th>
-                        <th>订单类别</th>
+                        <th>类别</th>
                     </tr>
                 </thead>
                 <tbody id="table-body"></tbody>
@@ -454,12 +457,12 @@
         </div>
         
         <div class="footer">
-            ⚡ 每天更新 | 共 <span id="footer-count">0</span> 条记录 | 最后更新：<span id="update-time">刚刚</span>
+            ⚡ 数据每天自动更新 | 共 <span id="footer-count">0</span> 条记录 | 最后更新：<span id="update-time">加载中...</span>
         </div>
     </div>
 
     <script>
-        // 全局变量
+        // ==================== 全局变量 ====================
         let allData = [];
         let filteredData = [];
         let currentPage = 1;
@@ -472,54 +475,76 @@
             reason: ''
         };
 
-        // 初始化：加载示例数据
+        // ==================== 页面加载自动加载数据 ====================
         document.addEventListener('DOMContentLoaded', function() {
-            // 尝试从localStorage加载数据
-            const savedData = localStorage.getItem('orderData');
-            if (savedData) {
-                allData = JSON.parse(savedData);
-                updateStats();
-                filterData();
-                renderTable();
-            } else {
-                // 如果没有数据，显示提示
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('result-table').style.display = 'table';
-                document.getElementById('table-body').innerHTML = '<tr><td colspan="18" class="no-data">请上传Excel文件开始查询</td></tr>';
-            }
+            loadDataFromCSV();
         });
 
-        // 处理文件上传
-        function handleFileUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('result-table').style.display = 'none';
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = e.target.result;
+        // ==================== 从服务器加载CSV文件 ====================
+        async function loadDataFromCSV() {
+            const loading = document.getElementById('loading');
+            const resultTable = document.getElementById('result-table');
+            
+            loading.style.display = 'block';
+            resultTable.style.display = 'none';
+            
+            try {
+                // 尝试加载data.csv文件（添加时间戳避免缓存）
+                const response = await fetch('data.csv?t=' + Date.now());
                 
-                // 根据文件类型处理
-                if (file.name.endsWith('.csv')) {
-                    parseCSV(data);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                
+                if (csvText.trim().length === 0) {
+                    throw new Error('CSV文件为空');
+                }
+                
+                parseCSV(csvText);
+                document.getElementById('data-source').innerHTML = '📁 数据来源：data.csv';
+                
+            } catch (error) {
+                console.error('加载CSV失败:', error);
+                
+                // 显示错误信息
+                const container = document.getElementById('table-container');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `
+                    ❌ 加载数据失败：${error.message}<br>
+                    请确保 data.csv 文件已上传到服务器，并已提交到GitHub。
+                `;
+                container.insertBefore(errorDiv, container.firstChild);
+                
+                // 尝试从localStorage加载备份数据
+                const savedData = localStorage.getItem('orderData');
+                if (savedData) {
+                    allData = JSON.parse(savedData);
+                    updateStats();
+                    filterData();
+                    renderTable();
+                    document.getElementById('data-source').innerHTML = '📁 数据来源：本地缓存';
                 } else {
-                    // 如果是Excel文件，需要额外处理，这里先提示
-                    alert('请将Excel另存为CSV格式后上传，或者使用示例数据。\n\n操作方法：\n1. 打开Excel文件\n2. 点击"文件" -> "另存为"\n3. 选择"CSV UTF-8(逗号分隔)"格式');
-                    
-                    // 使用内置的示例数据
+                    // 如果没有缓存，使用示例数据
                     loadSampleData();
                 }
-            };
-            
-            reader.readAsText(file, 'UTF-8');
+                
+                loading.style.display = 'none';
+                resultTable.style.display = 'table';
+            }
         }
 
-        // 解析CSV数据
+        // ==================== 解析CSV数据 ====================
         function parseCSV(csvText) {
             const lines = csvText.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
+            if (lines.length < 2) {
+                throw new Error('CSV文件格式错误');
+            }
+            
+            // 解析表头（第一行）
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
             
             allData = [];
             
@@ -543,34 +568,37 @@
                 }
                 values.push(currentValue.trim());
                 
-                if (values.length >= 5) {
+                // 去除每个值两端的引号
+                const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
+                
+                if (cleanValues.length >= 5) {
                     const item = {
-                        订单: values[0] || '',
-                        物料: values[2] || '',
-                        销售订单: values[5] || '',
-                        物料描述: values[9] || '',
-                        订单数量: values[3] || '0',
-                        已交货数量: values[4] || '0',
-                        未收货数量: values[16] || '0',
-                        基本开始日期: values[7] || '',
-                        基本完成日期: values[8] || '',
-                        实际完成日期: values[13] || '',
-                        逾期天数: values[15] || '0',
-                        是否正常交付: values[23] || '',
-                        未正常交付原因: values[24] || '',
-                        未正常交付责任人: values[25] || '',
-                        未正常交付责任部门: values[26] || '',
-                        车间备注: values[18] || '',
-                        异常原因: values[19] || '',
-                        涂布大卷: values[20] || '',
-                        订单类型: values[21] || '',
-                        订单类别: values[30] || ''
+                        订单: cleanValues[0] || '',
+                        物料: cleanValues[2] || '',
+                        销售订单: cleanValues[5] || '',
+                        物料描述: cleanValues[9] || '',
+                        订单数量: cleanValues[3] || '0',
+                        已交货数量: cleanValues[4] || '0',
+                        未收货数量: cleanValues[16] || '0',
+                        基本开始日期: cleanValues[7] || '',
+                        基本完成日期: cleanValues[8] || '',
+                        实际完成日期: cleanValues[13] || '',
+                        逾期天数: cleanValues[15] || '0',
+                        是否正常交付: cleanValues[23] || '',
+                        未正常交付原因: cleanValues[24] || '',
+                        未正常交付责任人: cleanValues[25] || '',
+                        未正常交付责任部门: cleanValues[26] || '',
+                        车间备注: cleanValues[18] || '',
+                        异常原因: cleanValues[19] || '',
+                        涂布大卷: cleanValues[20] || '',
+                        订单类型: cleanValues[21] || '',
+                        订单类别: cleanValues[30] || ''
                     };
                     allData.push(item);
                 }
             }
             
-            // 保存到localStorage
+            // 保存到localStorage作为备份
             localStorage.setItem('orderData', JSON.stringify(allData));
             
             // 更新界面
@@ -580,12 +608,12 @@
             
             document.getElementById('loading').style.display = 'none';
             document.getElementById('result-table').style.display = 'table';
-            document.getElementById('update-time').textContent = new Date().toLocaleString();
+            document.getElementById('update-time').textContent = new Date().toLocaleString('zh-CN');
             
-            alert(`数据加载完成！共 ${allData.length} 条记录`);
+            console.log(`✅ 数据加载完成！共 ${allData.length} 条记录`);
         }
 
-        // 加载示例数据（从Excel中提取的前20条记录）
+        // ==================== 加载示例数据 ====================
         function loadSampleData() {
             allData = [
                 {
@@ -647,60 +675,20 @@
                     涂布大卷: 'MIT93-7-200(大)',
                     订单类型: '品牌白包备货',
                     订单类别: 'ZP14'
-                },
-                {
-                    订单: '2100006164',
-                    物料: '2360850',
-                    销售订单: '',
-                    物料描述: 'BK90-7-143(oem)',
-                    订单数量: '1620',
-                    已交货数量: '1620',
-                    未收货数量: '0',
-                    基本开始日期: '2026-01-01',
-                    基本完成日期: '2026-01-29',
-                    实际完成日期: '2026-01-05',
-                    逾期天数: '4',
-                    是否正常交付: '否',
-                    异常原因: '备货',
-                    未正常交付责任人: '无',
-                    车间备注: '1月份备货',
-                    涂布大卷: 'BK90-7-143(大)',
-                    订单类型: '品牌白包备货',
-                    订单类别: 'ZP14'
-                },
-                {
-                    订单: '2100006158',
-                    物料: '9100257',
-                    销售订单: '10019655',
-                    物料描述: 'NC90-7-150',
-                    订单数量: '750',
-                    已交货数量: '750',
-                    未收货数量: '0',
-                    基本开始日期: '2026-01-01',
-                    基本完成日期: '2026-01-30',
-                    实际完成日期: '2025-12-31',
-                    逾期天数: '-1',
-                    是否正常交付: '是',
-                    异常原因: '缺膜',
-                    未正常交付责任人: '',
-                    车间备注: '没膜',
-                    涂布大卷: 'NTE90-7-150(大)',
-                    订单类型: '销售订单',
-                    订单类别: 'ZP14'
                 }
             ];
             
-            localStorage.setItem('orderData', JSON.stringify(allData));
+            document.getElementById('data-source').innerHTML = '📁 数据来源：示例数据';
             updateStats();
             filterData();
             renderTable();
             
             document.getElementById('loading').style.display = 'none';
             document.getElementById('result-table').style.display = 'table';
-            document.getElementById('update-time').textContent = new Date().toLocaleString();
+            document.getElementById('update-time').textContent = new Date().toLocaleString('zh-CN');
         }
 
-        // 更新统计信息
+        // ==================== 更新统计信息 ====================
         function updateStats() {
             document.getElementById('total-count').textContent = allData.length;
             
@@ -714,20 +702,18 @@
             document.getElementById('footer-count').textContent = allData.length;
         }
 
-        // 搜索功能
+        // ==================== 搜索功能 ====================
         function search() {
             searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
             currentPage = 1;
             filterData();
         }
 
-        // 快速搜索
         function quickSearch(keyword) {
             document.getElementById('search-input').value = keyword;
             search();
         }
 
-        // 清空搜索
         function clearSearch() {
             document.getElementById('search-input').value = '';
             searchKeyword = '';
@@ -735,7 +721,7 @@
             filterData();
         }
 
-        // 应用过滤器
+        // ==================== 过滤器 ====================
         function applyFilters() {
             filters.orderType = document.getElementById('order-type-filter').value;
             filters.delivery = document.getElementById('delivery-filter').value;
@@ -744,7 +730,7 @@
             filterData();
         }
 
-        // 过滤数据
+        // ==================== 数据过滤 ====================
         function filterData() {
             filteredData = allData.filter(item => {
                 // 搜索关键词过滤
@@ -785,7 +771,7 @@
             updatePagination();
         }
 
-        // 排序
+        // ==================== 排序 ====================
         function sortTable(columnIndex) {
             if (currentSort.column === columnIndex) {
                 currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -838,7 +824,7 @@
             });
         }
 
-        // 渲染表格
+        // ==================== 渲染表格 ====================
         function renderTable() {
             const tbody = document.getElementById('table-body');
             const start = (currentPage - 1) * pageSize;
@@ -859,38 +845,38 @@
                     <td><strong>${item.订单 || '-'}</strong></td>
                     <td>${item.物料 || '-'}</td>
                     <td>${item.销售订单 || '-'}</td>
-                    <td>${item.物料描述 || '-'}</td>
+                    <td title="${item.物料描述 || ''}">${(item.物料描述 || '').substring(0, 20)}${(item.物料描述 || '').length > 20 ? '...' : ''}</td>
                     <td>${item.订单数量 || '0'}</td>
                     <td>${item.已交货数量 || '0'}</td>
                     <td>${item.未收货数量 || '0'}</td>
                     <td>${item.基本开始日期 || '-'}</td>
                     <td>${item.基本完成日期 || '-'}</td>
                     <td>${item.实际完成日期 || '-'}</td>
-                    <td style="color: ${delayDays > 0 ? '#dc3545' : '#28a745'}; font-weight: 600;">${item.逾期天数 || '0'}</td>
+                    <td style="color: ${delayDays > 0 ? '#dc3545' : (delayDays < 0 ? '#28a745' : '#6c757d')}; font-weight: 600;">${item.逾期天数 || '0'}</td>
                     <td>
                         <span class="status-badge ${item.是否正常交付 === '是' ? 'status-normal' : 'status-warning'}">
                             ${item.是否正常交付 || '-'}
                         </span>
                     </td>
-                    <td>${item.异常原因 || '-'}</td>
+                    <td title="${item.异常原因 || ''}">${(item.异常原因 || '').substring(0, 10)}${(item.异常原因 || '').length > 10 ? '...' : ''}</td>
                     <td>${item.未正常交付责任人 || '-'}</td>
                     <td title="${item.车间备注 || ''}">${(item.车间备注 || '').substring(0, 15)}${(item.车间备注 || '').length > 15 ? '...' : ''}</td>
-                    <td>${item.涂布大卷 || '-'}</td>
+                    <td title="${item.涂布大卷 || ''}">${(item.涂布大卷 || '').substring(0, 15)}${(item.涂布大卷 || '').length > 15 ? '...' : ''}</td>
                     <td>${item.订单类型 || '-'}</td>
                     <td>${item.订单类别 || '-'}</td>
                 </tr>`;
             });
             
             tbody.innerHTML = html;
-            document.getElementById('result-table').style.display = 'table';
-            document.getElementById('loading').style.display = 'none';
         }
 
-        // 分页
+        // ==================== 分页 ====================
         function changePage(direction) {
+            const totalPages = Math.ceil(filteredData.length / pageSize);
+            
             if (direction === 'prev' && currentPage > 1) {
                 currentPage--;
-            } else if (direction === 'next' && currentPage < Math.ceil(filteredData.length / pageSize)) {
+            } else if (direction === 'next' && currentPage < totalPages) {
                 currentPage++;
             }
             renderTable();
@@ -910,20 +896,6 @@
             
             document.getElementById('prev-btn').disabled = currentPage === 1;
             document.getElementById('next-btn').disabled = currentPage === totalPages || totalPages === 0;
-        }
-
-        // 导出功能
-        function exportData() {
-            const dataStr = JSON.stringify(filteredData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `订单查询结果_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            
-            URL.revokeObjectURL(url);
         }
     </script>
 </body>
