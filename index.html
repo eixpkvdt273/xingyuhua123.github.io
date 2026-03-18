@@ -1,902 +1,314 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分切生产订单查询系统</title>
+    <title>分切生产订单完整报表</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
         body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: '微软雅黑', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            padding: 30px;
-        }
-        
         h1 {
-            color: #333;
+            color: #2E5BFF;
+            text-align: center;
             margin-bottom: 20px;
-            font-size: 28px;
-            border-left: 5px solid #667eea;
-            padding-left: 20px;
         }
-        
-        .search-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        
-        .search-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .search-header label {
-            font-weight: 600;
-            color: #555;
-            margin-right: 15px;
-            min-width: 100px;
-        }
-        
-        .search-input-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            flex: 1;
-        }
-        
-        input[type="text"] {
-            flex: 1;
-            min-width: 300px;
-            padding: 12px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 30px;
-            font-size: 16px;
-            transition: all 0.3s;
-            outline: none;
-        }
-        
-        input[type="text"]:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        
-        button {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102,126,234,0.6);
-        }
-        
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-        
-        .btn-secondary:hover {
-            background: #d0d0d0;
-        }
-        
-        .quick-search-tags {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .tag {
-            background: #e9ecef;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #495057;
-        }
-        
-        .tag:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        .filter-section {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-            color: #555;
-            font-size: 14px;
-        }
-        
-        select {
-            padding: 8px 15px;
+        .table-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 800px;
             border: 1px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background-color: white;
         }
-        
-        .stats-section {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            padding: 15px 25px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px;
+            min-width: 3000px; /* 确保所有列都显示 */
+        }
+        th {
+            background-color: #2E5BFF;
             color: white;
+            font-weight: bold;
+            padding: 12px 8px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f0f7ff;
+        }
+        .header-info {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
         }
-        
-        .stats-item {
-            font-size: 16px;
-        }
-        
-        .stats-item span {
-            font-weight: 700;
-            font-size: 20px;
-            margin-left: 10px;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            min-width: 1400px;
-        }
-        
-        th {
-            background: #f8f9fa;
-            color: #333;
-            font-weight: 600;
-            padding: 12px 10px;
-            text-align: left;
-            border-bottom: 2px solid #667eea;
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 10;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        th:hover {
-            background: #e9ecef;
-        }
-        
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #e0e0e0;
-            color: #666;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        tr:hover td {
-            background: #f5f5f5;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-normal {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-delay {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status-delay td {
-            background-color: rgba(220, 53, 69, 0.05);
-        }
-        
-        .status-warning td {
-            background-color: rgba(255, 193, 7, 0.05);
-        }
-        
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-size: 16px;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #667eea;
-            font-size: 16px;
-        }
-        
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            margin-left: 10px;
-            border: 2px solid #667eea;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .pagination {
+        .stats {
             display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 20px;
         }
-        
-        .pagination button {
-            padding: 8px 15px;
-            background: white;
-            border: 1px solid #ddd;
-            color: #333;
-        }
-        
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .pagination button:hover:not(:disabled) {
-            background: #f0f0f0;
-        }
-        
-        .footer {
-            margin-top: 20px;
+        .stat-item {
             text-align: center;
-            color: #999;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2E5BFF;
+        }
+        .filter-section {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
             font-size: 14px;
         }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
+        .export-btn {
+            background-color: #00C853;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
         }
-        
-        .data-source {
-            font-size: 12px;
-            color: #6c757d;
-            margin-left: 15px;
+        .export-btn:hover {
+            background-color: #00A844;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 分切生产订单查询系统</h1>
-        
-        <div class="search-section">
-            <div class="search-header">
-                <label>🔎 查询：</label>
-                <div class="search-input-group">
-                    <input type="text" id="search-input" placeholder="请输入订单号 / 物料号 / 销售订单号" autocomplete="off">
-                    <button class="btn-primary" onclick="search()">
-                        <span>🔍</span> 查询
-                    </button>
-                    <button class="btn-secondary" onclick="clearSearch()">
-                        <span>🗑️</span> 清空
-                    </button>
-                    <span class="data-source" id="data-source">📁 数据来源：服务器自动加载</span>
-                </div>
+    <h1>📊 分切生产订单完整报表</h1>
+    
+    <div class="header-info">
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">总订单数</div>
+                <div class="stat-value" id="totalOrders">-</div>
             </div>
-            
-            <div class="quick-search-tags">
-                <span style="color: #666;">快速查询：</span>
-                <span class="tag" onclick="quickSearch('2100001051')">订单:2100001051</span>
-                <span class="tag" onclick="quickSearch('2360134')">物料:2360134</span>
-                <span class="tag" onclick="quickSearch('10019655')">销售订单:10019655</span>
-                <span class="tag" onclick="quickSearch('缺膜')">异常原因:缺膜</span>
-                <span class="tag" onclick="quickSearch('关单')">状态:关单</span>
+            <div class="stat-item">
+                <div class="stat-label">正常交付率</div>
+                <div class="stat-value" id="normalRate">-</div>
             </div>
-            
-            <div class="filter-section">
-                <div class="filter-group">
-                    <label>订单类型：</label>
-                    <select id="order-type-filter" onchange="applyFilters()">
-                        <option value="">全部</option>
-                        <option value="ZP14">ZP14</option>
-                        <option value="ZP15">ZP15</option>
-                        <option value="ZP05">ZP05</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>是否正常交付：</label>
-                    <select id="delivery-filter" onchange="applyFilters()">
-                        <option value="">全部</option>
-                        <option value="是">是</option>
-                        <option value="否">否</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>异常原因：</label>
-                    <select id="reason-filter" onchange="applyFilters()">
-                        <option value="">全部</option>
-                        <option value="缺膜">缺膜</option>
-                        <option value="缺辅材">缺辅材</option>
-                        <option value="备货">备货</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label>每页显示：</label>
-                    <select id="page-size" onchange="changePageSize()">
-                        <option value="20">20条</option>
-                        <option value="50" selected>50条</option>
-                        <option value="100">100条</option>
-                        <option value="200">200条</option>
-                    </select>
-                </div>
+            <div class="stat-item">
+                <div class="stat-label">异常订单数</div>
+                <div class="stat-value" id="abnormalOrders">-</div>
             </div>
         </div>
-        
-        <div class="stats-section" id="stats">
-            <div class="stats-item">📊 总订单数：<span id="total-count">0</span></div>
-            <div class="stats-item">✅ 正常交付：<span id="normal-count">0</span></div>
-            <div class="stats-item">❌ 异常交付：<span id="abnormal-count">0</span></div>
-            <div class="stats-item">⚠️ 逾期订单：<span id="delay-count">0</span></div>
-        </div>
-        
-        <div class="table-container" id="table-container">
-            <div class="loading" id="loading">正在加载数据，请稍候...</div>
-            <table id="result-table" style="display: none;">
-                <thead id="table-header">
-                    <tr>
-                        <th onclick="sortTable(0)">订单号 ⬇️</th>
-                        <th onclick="sortTable(1)">物料号 ⬇️</th>
-                        <th onclick="sortTable(2)">销售订单 ⬇️</th>
-                        <th>物料描述</th>
-                        <th>订单数量</th>
-                        <th>已交货</th>
-                        <th>未收货</th>
-                        <th>开始日期</th>
-                        <th>完成日期</th>
-                        <th>实际完成</th>
-                        <th>逾期天数</th>
-                        <th>交付状态</th>
-                        <th>异常原因</th>
-                        <th>责任人</th>
-                        <th>车间备注</th>
-                        <th>涂布大卷</th>
-                        <th>订单类型</th>
-                        <th>类别</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"></tbody>
-            </table>
-        </div>
-        
-        <div class="pagination" id="pagination">
-            <button onclick="changePage('prev')" id="prev-btn" disabled>上一页</button>
-            <span id="page-info">第 1 页 / 共 1 页</span>
-            <button onclick="changePage('next')" id="next-btn" disabled>下一页</button>
-        </div>
-        
-        <div class="footer">
-            ⚡ 数据每天自动更新 | 共 <span id="footer-count">0</span> 条记录 | 最后更新：<span id="update-time">加载中...</span>
-        </div>
+        <button class="export-btn" onclick="exportToExcel()">📥 导出Excel</button>
+    </div>
+    
+    <div class="filter-section">
+        <input type="text" class="filter-input" id="searchInput" placeholder="🔍 搜索订单号、物料、责任部门..." onkeyup="filterTable()">
+        <span style="margin-left: 15px; color: #666;" id="rowCount">显示 0 行</span>
+    </div>
+    
+    <div class="table-container" id="tableContainer">
+        <!-- 表格将在这里动态生成 -->
     </div>
 
     <script>
-        // ==================== 全局变量 ====================
-        let allData = [];
-        let filteredData = [];
-        let currentPage = 1;
-        let pageSize = 50;
-        let currentSort = { column: 0, direction: 'asc' };
-        let searchKeyword = '';
-        let filters = {
-            orderType: '',
-            delivery: '',
-            reason: ''
-        };
-
-        // ==================== 页面加载自动加载数据 ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDataFromCSV();
-        });
-
-        // ==================== 从服务器加载CSV文件 ====================
-        async function loadDataFromCSV() {
-            const loading = document.getElementById('loading');
-            const resultTable = document.getElementById('result-table');
-            
-            loading.style.display = 'block';
-            resultTable.style.display = 'none';
-            
-            try {
-                // 尝试加载data.csv文件（添加时间戳避免缓存）
-                const response = await fetch('data.csv?t=' + Date.now());
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                
-                if (csvText.trim().length === 0) {
-                    throw new Error('CSV文件为空');
-                }
-                
-                parseCSV(csvText);
-                document.getElementById('data-source').innerHTML = '📁 数据来源：data.csv';
-                
-            } catch (error) {
-                console.error('加载CSV失败:', error);
-                
-                // 显示错误信息
-                const container = document.getElementById('table-container');
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message';
-                errorDiv.innerHTML = `
-                    ❌ 加载数据失败：${error.message}<br>
-                    请确保 data.csv 文件已上传到服务器，并已提交到GitHub。
-                `;
-                container.insertBefore(errorDiv, container.firstChild);
-                
-                // 尝试从localStorage加载备份数据
-                const savedData = localStorage.getItem('orderData');
-                if (savedData) {
-                    allData = JSON.parse(savedData);
-                    updateStats();
-                    filterData();
-                    renderTable();
-                    document.getElementById('data-source').innerHTML = '📁 数据来源：本地缓存';
-                } else {
-                    // 如果没有缓存，使用示例数据
-                    loadSampleData();
-                }
-                
-                loading.style.display = 'none';
-                resultTable.style.display = 'table';
+        // 完整的订单数据（从你的Excel数据转换而来）
+        const orderData = [
+            // 这里需要填充你的完整数据
+            // 为了演示，只放几条示例数据
+            {
+                "订单": "2100001051",
+                "系统状态": "结算 DLV PRC CSER BCRQ GMPS MANC SETC",
+                "物料": "2360134",
+                "订单数量": 810,
+                "已交货数量": 810,
+                "未收货数量": 0,
+                "销售订单": "",
+                "销售订单项目": 0,
+                "物料描述": "DA-200（白橙）",
+                "销售助理": "",
+                "备注": "2025/6/10检查完关单",
+                "安排分切日期": "2025/6/10",
+                "实际完成日期": "45817",
+                "车间状态": "",
+                "逾期天数": "",
+                "是否关单": "关单",
+                "车间备注": "",
+                "异常原因": "",
+                "涂布大卷": "NW90-9-150U3(大)",
+                "订单类型": "品牌白包",
+                "交付天数": -301,
+                "是否正常交付": "是",
+                "未正常交付原因": "",
+                "未正常交付责任人": "",
+                "未正常交付责任部门": "",
+                "关单日期": "2025-06-10",
+                "月份": 4
+            },
+            {
+                "订单": "2100003767",
+                "系统状态": "TECO CNF DLV PRC CSER BCRQ GMPS MANC*",
+                "物料": "2360580",
+                "订单数量": 180,
+                "已交货数量": 180,
+                "未收货数量": 0,
+                "销售订单": "",
+                "销售订单项目": 0,
+                "物料描述": "冰莓粉（宝马18m规格）",
+                "销售助理": "",
+                "备注": "2025/9/25检查完关单",
+                "安排分切日期": "2025/9/25",
+                "实际完成日期": "45923",
+                "车间状态": "",
+                "逾期天数": "",
+                "是否关单": "关单",
+                "车间备注": "",
+                "异常原因": "",
+                "涂布大卷": "冰莓粉LA-125-6(大)",
+                "订单类型": "品牌白包",
+                "交付天数": -248,
+                "是否正常交付": "是",
+                "未正常交付原因": "",
+                "未正常交付责任人": "",
+                "未正常交付责任部门": "",
+                "关单日期": "2025-09-24",
+                "月份": 5
             }
-        }
+            // ... 继续添加所有数据
+        ];
 
-        // ==================== 解析CSV数据 ====================
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            if (lines.length < 2) {
-                throw new Error('CSV文件格式错误');
-            }
-            
-            // 解析表头（第一行）
-            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-            
-            allData = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                // 处理引号内的逗号
-                const values = [];
-                let inQuote = false;
-                let currentValue = '';
-                
-                for (let char of lines[i]) {
-                    if (char === '"') {
-                        inQuote = !inQuote;
-                    } else if (char === ',' && !inQuote) {
-                        values.push(currentValue.trim());
-                        currentValue = '';
-                    } else {
-                        currentValue += char;
-                    }
-                }
-                values.push(currentValue.trim());
-                
-                // 去除每个值两端的引号
-                const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
-                
-                if (cleanValues.length >= 5) {
-                    const item = {
-                        订单: cleanValues[0] || '',
-                        物料: cleanValues[2] || '',
-                        销售订单: cleanValues[5] || '',
-                        物料描述: cleanValues[9] || '',
-                        订单数量: cleanValues[3] || '0',
-                        已交货数量: cleanValues[4] || '0',
-                        未收货数量: cleanValues[16] || '0',
-                        基本开始日期: cleanValues[7] || '',
-                        基本完成日期: cleanValues[8] || '',
-                        实际完成日期: cleanValues[13] || '',
-                        逾期天数: cleanValues[15] || '0',
-                        是否正常交付: cleanValues[23] || '',
-                        未正常交付原因: cleanValues[24] || '',
-                        未正常交付责任人: cleanValues[25] || '',
-                        未正常交付责任部门: cleanValues[26] || '',
-                        车间备注: cleanValues[18] || '',
-                        异常原因: cleanValues[19] || '',
-                        涂布大卷: cleanValues[20] || '',
-                        订单类型: cleanValues[21] || '',
-                        订单类别: cleanValues[30] || ''
-                    };
-                    allData.push(item);
-                }
-            }
-            
-            // 保存到localStorage作为备份
-            localStorage.setItem('orderData', JSON.stringify(allData));
-            
-            // 更新界面
-            updateStats();
-            filterData();
-            renderTable();
-            
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('result-table').style.display = 'table';
-            document.getElementById('update-time').textContent = new Date().toLocaleString('zh-CN');
-            
-            console.log(`✅ 数据加载完成！共 ${allData.length} 条记录`);
-        }
+        // 定义所有列（确保包含"安排分切日期"）
+        const columns = [
+            "订单", "系统状态", "物料", "物料描述", "订单数量", "已交货数量", "未收货数量",
+            "销售订单", "销售订单项目", "销售助理", "订单类型", "涂布大卷",
+            "基本开始日期", "基本完成日期", "实际完成日期", "安排分切日期", "关单日期",  // 确保这里有安排分切日期
+            "交付天数", "逾期天数", "是否正常交付", "交付状态", "是否关单",
+            "未正常交付原因", "异常原因", "未正常交付责任人", "未正常交付责任部门",
+            "车间状态", "车间备注", "备注", "月份"
+        ];
 
-        // ==================== 加载示例数据 ====================
-        function loadSampleData() {
-            allData = [
-                {
-                    订单: '2100001051',
-                    物料: '2360134',
-                    销售订单: '',
-                    物料描述: 'DA-200（白橙）',
-                    订单数量: '810',
-                    已交货数量: '810',
-                    未收货数量: '0',
-                    基本开始日期: '2026-04-06',
-                    基本完成日期: '2026-04-06',
-                    实际完成日期: '2025-06-09',
-                    逾期天数: '-301',
-                    是否正常交付: '是',
-                    异常原因: '',
-                    未正常交付责任人: '',
-                    车间备注: '',
-                    涂布大卷: '',
-                    订单类型: '品牌白包备货',
-                    订单类别: 'ZP14'
-                },
-                {
-                    订单: '2100003767',
-                    物料: '2360580',
-                    销售订单: '',
-                    物料描述: '冰莓粉（宝马18m规格）',
-                    订单数量: '180',
-                    已交货数量: '180',
-                    未收货数量: '0',
-                    基本开始日期: '2026-05-29',
-                    基本完成日期: '2026-05-29',
-                    实际完成日期: '2025-09-23',
-                    逾期天数: '-248',
-                    是否正常交付: '是',
-                    异常原因: '',
-                    未正常交付责任人: '',
-                    车间备注: '',
-                    涂布大卷: '冰莓粉LA-125-6(大)',
-                    订单类型: '品牌白包备货',
-                    订单类别: 'ZP14'
-                },
-                {
-                    订单: '2100006033',
-                    物料: '2360254',
-                    销售订单: '',
-                    物料描述: 'TPU-HPM10',
-                    订单数量: '810',
-                    已交货数量: '810',
-                    未收货数量: '0',
-                    基本开始日期: '2026-01-01',
-                    基本完成日期: '2026-01-29',
-                    实际完成日期: '2026-01-03',
-                    逾期天数: '2',
-                    是否正常交付: '是',
-                    异常原因: '缺膜',
-                    未正常交付责任人: '',
-                    车间备注: '没膜',
-                    涂布大卷: 'MIT93-7-200(大)',
-                    订单类型: '品牌白包备货',
-                    订单类别: 'ZP14'
-                }
-            ];
+        // 渲染表格
+        function renderTable(data) {
+            const container = document.getElementById('tableContainer');
             
-            document.getElementById('data-source').innerHTML = '📁 数据来源：示例数据';
-            updateStats();
-            filterData();
-            renderTable();
+            // 创建表格
+            let table = '<table id="dataTable">';
             
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('result-table').style.display = 'table';
-            document.getElementById('update-time').textContent = new Date().toLocaleString('zh-CN');
-        }
-
-        // ==================== 更新统计信息 ====================
-        function updateStats() {
-            document.getElementById('total-count').textContent = allData.length;
-            
-            const normalCount = allData.filter(item => item.是否正常交付 === '是').length;
-            const abnormalCount = allData.filter(item => item.是否正常交付 === '否').length;
-            const delayCount = allData.filter(item => parseInt(item.逾期天数) > 0).length;
-            
-            document.getElementById('normal-count').textContent = normalCount;
-            document.getElementById('abnormal-count').textContent = abnormalCount;
-            document.getElementById('delay-count').textContent = delayCount;
-            document.getElementById('footer-count').textContent = allData.length;
-        }
-
-        // ==================== 搜索功能 ====================
-        function search() {
-            searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
-            currentPage = 1;
-            filterData();
-        }
-
-        function quickSearch(keyword) {
-            document.getElementById('search-input').value = keyword;
-            search();
-        }
-
-        function clearSearch() {
-            document.getElementById('search-input').value = '';
-            searchKeyword = '';
-            currentPage = 1;
-            filterData();
-        }
-
-        // ==================== 过滤器 ====================
-        function applyFilters() {
-            filters.orderType = document.getElementById('order-type-filter').value;
-            filters.delivery = document.getElementById('delivery-filter').value;
-            filters.reason = document.getElementById('reason-filter').value;
-            currentPage = 1;
-            filterData();
-        }
-
-        // ==================== 数据过滤 ====================
-        function filterData() {
-            filteredData = allData.filter(item => {
-                // 搜索关键词过滤
-                if (searchKeyword) {
-                    const matchOrder = item.订单.toLowerCase().includes(searchKeyword);
-                    const matchMaterial = item.物料.toLowerCase().includes(searchKeyword);
-                    const matchSalesOrder = item.销售订单.toLowerCase().includes(searchKeyword);
-                    const matchDesc = item.物料描述.toLowerCase().includes(searchKeyword);
-                    const matchReason = item.异常原因.toLowerCase().includes(searchKeyword);
-                    
-                    if (!(matchOrder || matchMaterial || matchSalesOrder || matchDesc || matchReason)) {
-                        return false;
-                    }
-                }
-                
-                // 订单类型过滤
-                if (filters.orderType && item.订单类别 !== filters.orderType) {
-                    return false;
-                }
-                
-                // 交付状态过滤
-                if (filters.delivery && item.是否正常交付 !== filters.delivery) {
-                    return false;
-                }
-                
-                // 异常原因过滤
-                if (filters.reason && !item.异常原因.includes(filters.reason)) {
-                    return false;
-                }
-                
-                return true;
+            // 表头
+            table += '<thead><tr>';
+            columns.forEach(col => {
+                table += `<th>${col}</th>`;
             });
+            table += '</tr></thead>';
             
-            // 应用排序
-            sortFilteredData();
-            
-            renderTable();
-            updatePagination();
-        }
-
-        // ==================== 排序 ====================
-        function sortTable(columnIndex) {
-            if (currentSort.column === columnIndex) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = columnIndex;
-                currentSort.direction = 'asc';
-            }
-            
-            sortFilteredData();
-            renderTable();
-        }
-
-        function sortFilteredData() {
-            const columnMap = {
-                0: '订单',
-                1: '物料',
-                2: '销售订单',
-                3: '物料描述',
-                4: '订单数量',
-                5: '已交货数量',
-                6: '未收货数量',
-                7: '基本开始日期',
-                8: '基本完成日期',
-                9: '实际完成日期',
-                10: '逾期天数',
-                11: '是否正常交付',
-                12: '异常原因',
-                13: '未正常交付责任人',
-                14: '车间备注',
-                15: '涂布大卷',
-                16: '订单类型',
-                17: '订单类别'
-            };
-            
-            const key = columnMap[currentSort.column];
-            
-            filteredData.sort((a, b) => {
-                let valA = a[key] || '';
-                let valB = b[key] || '';
-                
-                // 数字类型特殊处理
-                if (key === '订单数量' || key === '已交货数量' || key === '未收货数量' || key === '逾期天数') {
-                    valA = parseFloat(valA) || 0;
-                    valB = parseFloat(valB) || 0;
-                }
-                
-                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-                return 0;
+            // 表体
+            table += '<tbody>';
+            data.forEach(row => {
+                table += '<tr>';
+                columns.forEach(col => {
+                    let value = row[col] !== undefined ? row[col] : '';
+                    // 处理特殊字符
+                    value = String(value).replace(/&/g, '&amp;')
+                                         .replace(/</g, '&lt;')
+                                         .replace(/>/g, '&gt;')
+                                         .replace(/"/g, '&quot;')
+                                         .replace(/'/g, '&#39;');
+                    table += `<td title="${value}">${value}</td>`;
+                });
+                table += '</tr>';
             });
+            table += '</tbody></table>';
+            
+            container.innerHTML = table;
+            
+            // 更新统计
+            updateStats(data);
+            document.getElementById('rowCount').textContent = `显示 ${data.length} 行`;
         }
 
-        // ==================== 渲染表格 ====================
-        function renderTable() {
-            const tbody = document.getElementById('table-body');
-            const start = (currentPage - 1) * pageSize;
-            const end = Math.min(start + pageSize, filteredData.length);
-            const pageData = filteredData.slice(start, end);
+        // 更新统计信息
+        function updateStats(data) {
+            document.getElementById('totalOrders').textContent = data.length;
             
-            if (filteredData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="18" class="no-data">未找到匹配的记录</td></tr>';
+            const normalOrders = data.filter(row => row.是否正常交付 === '是').length;
+            const normalRate = (normalOrders / data.length * 100).toFixed(1);
+            document.getElementById('normalRate').textContent = normalRate + '%';
+            
+            const abnormalOrders = data.filter(row => row.是否正常交付 === '否').length;
+            document.getElementById('abnormalOrders').textContent = abnormalOrders;
+        }
+
+        // 搜索过滤
+        function filterTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (searchText === '') {
+                renderTable(orderData);
                 return;
             }
             
-            let html = '';
-            pageData.forEach(item => {
-                const delayDays = parseInt(item.逾期天数) || 0;
-                const rowClass = delayDays > 0 ? 'status-delay' : (item.是否正常交付 === '否' ? 'status-warning' : '');
-                
-                html += `<tr class="${rowClass}">
-                    <td><strong>${item.订单 || '-'}</strong></td>
-                    <td>${item.物料 || '-'}</td>
-                    <td>${item.销售订单 || '-'}</td>
-                    <td title="${item.物料描述 || ''}">${(item.物料描述 || '').substring(0, 20)}${(item.物料描述 || '').length > 20 ? '...' : ''}</td>
-                    <td>${item.订单数量 || '0'}</td>
-                    <td>${item.已交货数量 || '0'}</td>
-                    <td>${item.未收货数量 || '0'}</td>
-                    <td>${item.基本开始日期 || '-'}</td>
-                    <td>${item.基本完成日期 || '-'}</td>
-                    <td>${item.实际完成日期 || '-'}</td>
-                    <td style="color: ${delayDays > 0 ? '#dc3545' : (delayDays < 0 ? '#28a745' : '#6c757d')}; font-weight: 600;">${item.逾期天数 || '0'}</td>
-                    <td>
-                        <span class="status-badge ${item.是否正常交付 === '是' ? 'status-normal' : 'status-warning'}">
-                            ${item.是否正常交付 || '-'}
-                        </span>
-                    </td>
-                    <td title="${item.异常原因 || ''}">${(item.异常原因 || '').substring(0, 10)}${(item.异常原因 || '').length > 10 ? '...' : ''}</td>
-                    <td>${item.未正常交付责任人 || '-'}</td>
-                    <td title="${item.车间备注 || ''}">${(item.车间备注 || '').substring(0, 15)}${(item.车间备注 || '').length > 15 ? '...' : ''}</td>
-                    <td title="${item.涂布大卷 || ''}">${(item.涂布大卷 || '').substring(0, 15)}${(item.涂布大卷 || '').length > 15 ? '...' : ''}</td>
-                    <td>${item.订单类型 || '-'}</td>
-                    <td>${item.订单类别 || '-'}</td>
-                </tr>`;
+            const filteredData = orderData.filter(row => {
+                return columns.some(col => {
+                    const value = row[col];
+                    return value && String(value).toLowerCase().includes(searchText);
+                });
             });
             
-            tbody.innerHTML = html;
+            renderTable(filteredData);
         }
 
-        // ==================== 分页 ====================
-        function changePage(direction) {
-            const totalPages = Math.ceil(filteredData.length / pageSize);
+        // 导出Excel
+        function exportToExcel() {
+            let csv = columns.join(',') + '\n';
             
-            if (direction === 'prev' && currentPage > 1) {
-                currentPage--;
-            } else if (direction === 'next' && currentPage < totalPages) {
-                currentPage++;
-            }
-            renderTable();
-            updatePagination();
-        }
-
-        function changePageSize() {
-            pageSize = parseInt(document.getElementById('page-size').value);
-            currentPage = 1;
-            renderTable();
-            updatePagination();
-        }
-
-        function updatePagination() {
-            const totalPages = Math.ceil(filteredData.length / pageSize);
-            document.getElementById('page-info').textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            orderData.forEach(row => {
+                const rowData = columns.map(col => {
+                    let value = row[col] !== undefined ? row[col] : '';
+                    // 处理CSV特殊字符
+                    value = String(value).replace(/"/g, '""');
+                    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+                        value = `"${value}"`;
+                    }
+                    return value;
+                }).join(',');
+                csv += rowData + '\n';
+            });
             
-            document.getElementById('prev-btn').disabled = currentPage === 1;
-            document.getElementById('next-btn').disabled = currentPage === totalPages || totalPages === 0;
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '分切生产订单报表.csv';
+            link.click();
         }
+
+        // 页面加载时渲染表格
+        window.onload = function() {
+            renderTable(orderData);
+        };
     </script>
 </body>
 </html>
