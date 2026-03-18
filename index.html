@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分切生产订单管理系统 - GitHub版</title>
+    <title>分切生产订单管理系统 - GitHub优化版</title>
     <style>
-        /* 样式保持不变，与之前相同 */
+        /* 样式保持不变 */
         * {
             margin: 0;
             padding: 0;
@@ -52,16 +52,6 @@
             padding: 10px 20px;
             border-radius: 5px;
             font-size: 14px;
-        }
-
-        .github-info a {
-            color: white;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-
-        .github-info a:hover {
-            text-decoration: underline;
         }
 
         .refresh-btn {
@@ -476,13 +466,29 @@
             display: block;
         }
 
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
+        .message-box {
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
             display: none;
+        }
+
+        .message-box.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .message-box.warning {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+
+        .message-box.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
         }
 
         .file-info {
@@ -501,12 +507,32 @@
             font-family: monospace;
         }
 
-        .update-instruction {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin-bottom: 20px;
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .data-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
             border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .data-btn:hover {
+            background: #5a6268;
+        }
+
+        .data-btn.primary {
+            background: #28a745;
+        }
+
+        .data-btn.primary:hover {
+            background: #218838;
         }
     </style>
 </head>
@@ -518,21 +544,38 @@
     <div class="container">
         <div class="header">
             <h1>🔍 分切生产订单管理系统</h1>
-            <p>GitHub Pages 版本 - 每天更新数据后自动刷新</p>
+            <p>GitHub Pages 版本 - 支持CSV数据上传和预览</p>
             <div class="github-info">
                 <span>📅 <span id="dataDate">加载中...</span></span>
                 <button class="refresh-btn" onclick="loadData()" id="refreshBtn">🔄 刷新数据</button>
             </div>
         </div>
 
-        <!-- 文件说明 -->
+        <!-- 文件上传区域 -->
         <div class="file-info">
-            <strong>📁 GitHub 仓库文件结构：</strong><br>
-                       <br>
-                  </div>
+            <strong>📁 数据文件管理：</strong><br>
+            <div style="margin: 10px 0;">
+                <span>📄 订单文件: <code>orders.csv</code></span>
+                <span style="margin-left: 20px;">📊 汇总文件: <code>summary.csv</code></span>
+            </div>
+            
+            <div class="data-actions">
+                <button class="data-btn" onclick="document.getElementById('ordersFile').click()">📁 上传 orders.csv</button>
+                <button class="data-btn" onclick="document.getElementById('summaryFile').click()">📁 上传 summary.csv</button>
+                <button class="data-btn primary" onclick="useSampleData()">📋 使用示例数据</button>
+                <button class="data-btn" onclick="downloadSampleFiles()">📥 下载示例模板</button>
+            </div>
+            
+            <input type="file" id="ordersFile" accept=".csv" style="display: none;" onchange="handleFileUpload('orders', this)">
+            <input type="file" id="summaryFile" accept=".csv" style="display: none;" onchange="handleFileUpload('summary', this)">
+            
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                ⚡ 提示：上传的CSV文件会保存在浏览器本地，刷新页面后需要重新上传
+            </div>
+        </div>
 
-        <!-- 错误提示 -->
-        <div class="error-message" id="errorMessage"></div>
+        <!-- 消息提示 -->
+        <div class="message-box" id="messageBox"></div>
 
         <!-- 统计卡片 -->
         <div class="stats-grid" id="statsCards">
@@ -680,108 +723,301 @@
         const pageSize = 20;
         let charts = {};
 
-        // GitHub Pages 配置
-        const CONFIG = {
-            ordersFile: 'orders.csv',      // 订单数据文件名
-            summaryFile: 'summary.csv',     // 汇总数据文件名
-            cacheBuster: true               // 启用缓存清除
-        };
-
-        // 页面加载时读取数据
+        // 初始化 - 使用localStorage中的数据和示例数据
         document.addEventListener('DOMContentLoaded', function() {
-            loadData();
-            // 设置定时刷新（可选，每30分钟自动刷新）
-            setInterval(loadData, 30 * 60 * 1000);
+            // 尝试从localStorage加载数据
+            loadFromLocalStorage();
+            
+            // 如果localStorage中没有数据，使用示例数据
+            if (orders.length === 0) {
+                useSampleData();
+            } else {
+                updateAll();
+            }
         });
 
-        // 加载CSV数据
-        async function loadData() {
-            showLoading();
-            hideError();
-
+        // 从localStorage加载数据
+        function loadFromLocalStorage() {
             try {
-                // 添加时间戳避免缓存
-                const timestamp = CONFIG.cacheBuster ? `?t=${Date.now()}` : '';
+                const savedOrders = localStorage.getItem('ordersData');
+                const savedSummary = localStorage.getItem('summaryData');
                 
-                // 同时加载两个CSV文件
-                const [ordersResult, summaryResult] = await Promise.allSettled([
-                    loadCSV(CONFIG.ordersFile + timestamp),
-                    loadCSV(CONFIG.summaryFile + timestamp)
-                ]);
-
-                // 处理订单数据
-                if (ordersResult.status === 'fulfilled' && ordersResult.value && ordersResult.value.length > 1) {
-                    orders = parseOrdersData(ordersResult.value);
+                if (savedOrders) {
+                    orders = JSON.parse(savedOrders);
                     filteredOrders = [...orders];
-                    console.log(`✅ 成功加载 ${orders.length} 条订单数据`);
-                } else {
-                    console.warn('订单CSV文件加载失败，使用模拟数据');
-                    orders = getMockOrders();
-                    filteredOrders = [...orders];
-                    showWarning('订单数据加载失败，使用示例数据');
                 }
-
-                // 处理汇总数据
-                if (summaryResult.status === 'fulfilled' && summaryResult.value && summaryResult.value.length > 0) {
-                    summaryData = parseSummaryData(summaryResult.value);
-                    console.log('✅ 成功加载汇总数据');
-                } else {
-                    console.warn('汇总CSV文件加载失败，使用模拟数据');
-                    summaryData = getMockSummaryData();
-                    showWarning('汇总数据加载失败，使用示例数据');
-                }
-
-                // 更新UI
-                updateDataInfo();
-                updateStatsCards();
-                updateSummaryContent();
-                renderTable();
                 
-                // 如果当前在分析标签页，重新初始化图表
-                if (document.getElementById('analysis-tab').classList.contains('active')) {
-                    initCharts();
+                if (savedSummary) {
+                    summaryData = JSON.parse(savedSummary);
                 }
-
-            } catch (error) {
-                console.error('数据加载失败:', error);
-                showError('数据加载失败，请检查CSV文件是否存在');
                 
-                // 使用模拟数据作为后备
-                orders = getMockOrders();
-                filteredOrders = [...orders];
-                summaryData = getMockSummaryData();
-                updateStatsCards();
-                updateSummaryContent();
-                renderTable();
-            } finally {
-                hideLoading();
+                if (orders.length > 0) {
+                    showMessage('从本地缓存加载数据成功', 'success');
+                }
+            } catch (e) {
+                console.warn('加载本地数据失败', e);
             }
         }
 
-        // 加载单个CSV文件
-        function loadCSV(filename) {
-            return new Promise((resolve, reject) => {
-                Papa.parse(filename, {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    encoding: 'UTF-8',
-                    complete: function(results) {
-                        if (results.data && results.data.length > 0) {
-                            // 过滤掉空行
-                            const validData = results.data.filter(row => 
-                                Object.values(row).some(val => val && val.trim() !== '')
-                            );
-                            resolve(validData);
-                        } else {
-                            reject(new Error('CSV文件为空'));
-                        }
-                    },
-                    error: function(error) {
-                        reject(error);
+        // 保存数据到localStorage
+        function saveToLocalStorage() {
+            try {
+                if (orders.length > 0) {
+                    localStorage.setItem('ordersData', JSON.stringify(orders));
+                }
+                if (Object.keys(summaryData).length > 0) {
+                    localStorage.setItem('summaryData', JSON.stringify(summaryData));
+                }
+            } catch (e) {
+                console.warn('保存本地数据失败', e);
+            }
+        }
+
+        // 处理文件上传
+        window.handleFileUpload = function(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            showLoading();
+            
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                encoding: 'UTF-8',
+                complete: function(results) {
+                    if (type === 'orders') {
+                        orders = parseOrdersData(results.data);
+                        filteredOrders = [...orders];
+                        showMessage(`订单数据加载成功，共 ${orders.length} 条记录`, 'success');
+                    } else {
+                        summaryData = parseSummaryData(results.data);
+                        showMessage('汇总数据加载成功', 'success');
                     }
-                });
+                    
+                    // 保存到localStorage
+                    saveToLocalStorage();
+                    
+                    // 更新UI
+                    updateAll();
+                    hideLoading();
+                    
+                    // 清空input
+                    input.value = '';
+                },
+                error: function(error) {
+                    showMessage('文件解析失败：' + error.message, 'error');
+                    hideLoading();
+                }
             });
+        };
+
+        // 使用示例数据
+        window.useSampleData = function() {
+            showLoading();
+            
+            // 使用完整的示例数据
+            orders = getFullMockOrders();
+            filteredOrders = [...orders];
+            summaryData = getFullMockSummaryData();
+            
+            // 保存到localStorage
+            saveToLocalStorage();
+            
+            // 更新UI
+            updateAll();
+            
+            showMessage('使用示例数据，共 ' + orders.length + ' 条订单记录', 'warning');
+            hideLoading();
+        };
+
+        // 下载示例模板
+        window.downloadSampleFiles = function() {
+            // 下载orders.csv模板
+            const ordersHeaders = ['订单', '系统状态', '物料', '订单数量', '已交货数量', '销售订单', '销售订单项目', '基本开始日期', '基本完成日期', '物料描述', '销售助理', '备注', '安排分切日期', '实际完成日期', '车间状态', '逾期天数', '未收货数量', '是否关单', '车间备注', '异常原因', '涂布大卷', '订单类型', '交付天数', '是否正常交付', '未正常交付原因', '未正常交付责任人', '未正常交付责任部门', '关单日期', '月份', '订单类别'];
+            const ordersSample = [
+                '2100001051,结算,2360134,810,810,,0,2026/4/6,2026/4/6,DA-200（白橙）,,,,2025/6/10,2025/6/9,,,0,关单,,,,品牌白包备货,-301,是,,,,2025/6/10,4,ZP14',
+                '2100003767,TECO,2360580,180,180,,0,2026/5/29,2026/5/29,冰莓粉（宝马18m规格）,,,,2025/9/25,2025/9/23,,,0,关单,,,冰莓粉LA-125-6(大),品牌白包备货,-248,是,,,,2025/9/24,5,ZP14'
+            ];
+            
+            const ordersCsv = ordersHeaders.join(',') + '\n' + ordersSample.join('\n');
+            downloadFile(ordersCsv, 'orders-template.csv');
+            
+            // 下载summary.csv模板
+            const summaryHeaders = ['未入库生产订单数量（笔）', '总未入库生产订单产量（M)', '分切常规未入库数量(M)', '逾期生产订单（笔）', '逾期生产产量（M)', '未关闭订单（笔）', '异常订单未关闭', '内返未入库数量(M)', '售后未入库数量(M)', '合计未收货数量(M)', '月份', '本月分切总订单数量（m）', '本月分切/内返总订单数量（M）', '未正常交付占比', '除去备货未正常交付占比', '未除异常的分切交付率', '除去异常PPF交付率'];
+            const summarySample = ['143', '257434.7', '242710.2', '60', '133600.2', '138', '0', '7797.5', '6927', '257434.7', '3', '772039', '857569.3', '28.89%', '17.47%', '71.11%', '99.26%'];
+            
+            const summaryCsv = summaryHeaders.join(',') + '\n' + summarySample.join(',');
+            downloadFile(summaryCsv, 'summary-template.csv');
+        };
+
+        function downloadFile(content, filename) {
+            const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // 获取完整的模拟订单数据
+        function getFullMockOrders() {
+            return [
+                {
+                    orderNo: "2100001051",
+                    status: "结算",
+                    material: "2360134",
+                    materialDesc: "DA-200（白橙）",
+                    orderQty: 810,
+                    deliveredQty: 810,
+                    undeliveredQty: 0,
+                    salesOrder: "",
+                    salesAssistant: "",
+                    startDate: "2026-04-06",
+                    finishDate: "2026-04-06",
+                    scheduleDate: "2025-06-10",
+                    actualDate: "2025-06-09",
+                    overdueDays: -301,
+                    workshopStatus: "",
+                    isClosed: "关单",
+                    exceptionReason: "",
+                    abnormalReason: "",
+                    责任人: "",
+                    责任部门: "",
+                    orderType: "品牌白包备货",
+                    deliveryDays: -301,
+                    normalDelivery: "是",
+                    month: 4
+                },
+                {
+                    orderNo: "2100003767",
+                    status: "TECO",
+                    material: "2360580",
+                    materialDesc: "冰莓粉（宝马18m规格）",
+                    orderQty: 180,
+                    deliveredQty: 180,
+                    undeliveredQty: 0,
+                    salesOrder: "",
+                    salesAssistant: "",
+                    startDate: "2026-05-29",
+                    finishDate: "2026-05-29",
+                    scheduleDate: "2025-09-25",
+                    actualDate: "2025-09-23",
+                    overdueDays: -248,
+                    workshopStatus: "",
+                    isClosed: "关单",
+                    exceptionReason: "",
+                    abnormalReason: "",
+                    责任人: "",
+                    责任部门: "",
+                    orderType: "品牌白包备货",
+                    deliveryDays: -248,
+                    normalDelivery: "是",
+                    month: 5
+                },
+                {
+                    orderNo: "2100006033",
+                    status: "结算",
+                    material: "2360254",
+                    materialDesc: "TPU-HPM10",
+                    orderQty: 810,
+                    deliveredQty: 810,
+                    undeliveredQty: 0,
+                    salesOrder: "",
+                    salesAssistant: "",
+                    startDate: "2026-01-01",
+                    finishDate: "2026-01-29",
+                    scheduleDate: "2026-01-03",
+                    actualDate: "2026-01-03",
+                    overdueDays: 0,
+                    workshopStatus: "已完成",
+                    isClosed: "关单",
+                    exceptionReason: "缺膜",
+                    abnormalReason: "备货",
+                    责任人: "无",
+                    责任部门: "无",
+                    orderType: "品牌白包备货",
+                    deliveryDays: 2,
+                    normalDelivery: "是",
+                    month: 1
+                },
+                {
+                    orderNo: "2100006164",
+                    status: "结算",
+                    material: "2360850",
+                    materialDesc: "BK90-7-143(oem)",
+                    orderQty: 1620,
+                    deliveredQty: 1620,
+                    undeliveredQty: 0,
+                    salesOrder: "",
+                    salesAssistant: "",
+                    startDate: "2026-01-01",
+                    finishDate: "2026-01-29",
+                    scheduleDate: "2026-01-05",
+                    actualDate: "2026-01-05",
+                    overdueDays: 0,
+                    workshopStatus: "已完成",
+                    isClosed: "关单",
+                    exceptionReason: "",
+                    abnormalReason: "备货",
+                    责任人: "无",
+                    责任部门: "无",
+                    orderType: "品牌白包备货",
+                    deliveryDays: 4,
+                    normalDelivery: "否",
+                    month: 1
+                },
+                {
+                    orderNo: "2100006158",
+                    status: "结算",
+                    material: "9100257",
+                    materialDesc: "NC90-7-150",
+                    orderQty: 750,
+                    deliveredQty: 750,
+                    undeliveredQty: 0,
+                    salesOrder: "10019655",
+                    salesAssistant: "",
+                    startDate: "2026-01-01",
+                    finishDate: "2026-01-30",
+                    scheduleDate: "",
+                    actualDate: "2025-12-31",
+                    overdueDays: -1,
+                    workshopStatus: "已完成",
+                    isClosed: "关单",
+                    exceptionReason: "缺膜",
+                    abnormalReason: "",
+                    责任人: "",
+                    责任部门: "",
+                    orderType: "销售订单",
+                    deliveryDays: -1,
+                    normalDelivery: "是",
+                    month: 1
+                }
+            ];
+        }
+
+        // 获取完整的模拟汇总数据
+        function getFullMockSummaryData() {
+            return {
+                未入库订单数: '143',
+                总未入库产量: '257434.7',
+                常规未入库: '242710.2',
+                逾期订单数: '60',
+                逾期产量: '133600.2',
+                未关闭订单: '138',
+                实验未入库: '0',
+                内返未入库: '7797.5',
+                售后未入库: '6927',
+                月份: '3',
+                本月分切产量: '772039',
+                本月总产量: '857569.3',
+                未正常交付占比: '28.89%',
+                除去备货占比: '17.47%',
+                分切交付率: '71.11%',
+                PPF交付率: '99.26%'
+            };
         }
 
         // 解析订单数据
@@ -849,84 +1085,24 @@
             return data;
         }
 
-        // 获取模拟订单数据
-        function getMockOrders() {
-            return [
-                {
-                    orderNo: "2100001051",
-                    status: "结算",
-                    material: "2360134",
-                    materialDesc: "DA-200（白橙）",
-                    orderQty: 810,
-                    deliveredQty: 810,
-                    undeliveredQty: 0,
-                    salesOrder: "",
-                    salesAssistant: "",
-                    startDate: "2026-04-06",
-                    finishDate: "2026-04-06",
-                    scheduleDate: "2025-06-10",
-                    actualDate: "2025-06-09",
-                    overdueDays: -301,
-                    workshopStatus: "",
-                    isClosed: "关单",
-                    exceptionReason: "",
-                    abnormalReason: "",
-                    责任人: "",
-                    责任部门: "",
-                    orderType: "品牌白包备货",
-                    deliveryDays: -301,
-                    normalDelivery: "是",
-                    month: 4
-                },
-                {
-                    orderNo: "2100003767",
-                    status: "TECO",
-                    material: "2360580",
-                    materialDesc: "冰莓粉（宝马18m规格）",
-                    orderQty: 180,
-                    deliveredQty: 180,
-                    undeliveredQty: 0,
-                    salesOrder: "",
-                    salesAssistant: "",
-                    startDate: "2026-05-29",
-                    finishDate: "2026-05-29",
-                    scheduleDate: "2025-09-25",
-                    actualDate: "2025-09-23",
-                    overdueDays: -248,
-                    workshopStatus: "",
-                    isClosed: "关单",
-                    exceptionReason: "",
-                    abnormalReason: "",
-                    责任人: "",
-                    责任部门: "",
-                    orderType: "品牌白包备货",
-                    deliveryDays: -248,
-                    normalDelivery: "是",
-                    month: 5
-                }
-            ];
+        // 显示消息
+        function showMessage(message, type = 'info') {
+            const msgBox = document.getElementById('messageBox');
+            msgBox.className = `message-box ${type}`;
+            msgBox.innerHTML = type === 'error' ? '❌ ' : (type === 'warning' ? '⚠️ ' : '✅ ') + message;
         }
 
-        // 获取模拟汇总数据
-        function getMockSummaryData() {
-            return {
-                未入库订单数: '143',
-                总未入库产量: '257434.7',
-                常规未入库: '242710.2',
-                逾期订单数: '60',
-                逾期产量: '133600.2',
-                未关闭订单: '138',
-                实验未入库: '0',
-                内返未入库: '7797.5',
-                售后未入库: '6927',
-                月份: '3',
-                本月分切产量: '772039',
-                本月总产量: '857569.3',
-                未正常交付占比: '28.89%',
-                除去备货占比: '17.47%',
-                分切交付率: '71.11%',
-                PPF交付率: '99.26%'
-            };
+        // 更新所有UI
+        function updateAll() {
+            updateDataInfo();
+            updateStatsCards();
+            updateSummaryContent();
+            renderTable();
+            
+            // 如果当前在分析标签页，重新初始化图表
+            if (document.getElementById('analysis-tab').classList.contains('active')) {
+                initCharts();
+            }
         }
 
         // 更新数据时间信息
@@ -1405,31 +1581,10 @@
             document.getElementById('refreshBtn').disabled = false;
         }
 
-        // 显示错误信息
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.style.display = 'block';
-            errorEl.style.background = '#f8d7da';
-            errorEl.style.color = '#721c24';
-            errorEl.innerHTML = '❌ ' + message;
-        }
-
-        // 显示警告信息
-        function showWarning(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.style.display = 'block';
-            errorEl.style.background = '#fff3cd';
-            errorEl.style.color = '#856404';
-            errorEl.innerHTML = '⚠️ ' + message;
-        }
-
-        // 隐藏错误信息
-        function hideError() {
-            document.getElementById('errorMessage').style.display = 'none';
-        }
-
-        // 将loadData函数暴露给全局
-        window.loadData = loadData;
+        // 加载数据函数（兼容原有刷新按钮）
+        window.loadData = function() {
+            showMessage('请使用上传功能加载数据', 'info');
+        };
     </script>
 </body>
 </html>
