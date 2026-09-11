@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>邢玉华个人网页非公司</title>
+    <!-- Netlify Identity 脚本 -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
         * {
             margin: 0;
@@ -26,6 +28,59 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 30px;
             backdrop-filter: blur(10px);
+        }
+
+        /* 登录界面样式 */
+        #login-screen {
+            display: none; /* 默认隐藏，由 JS 控制显示 */
+            text-align: center;
+            padding: 100px 20px;
+            color: white;
+        }
+        #login-screen h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        #login-screen p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        #login-screen button {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        #login-screen button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        /* 顶部用户菜单栏样式 */
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+        /* 调整 Netlify 菜单按钮样式以适配当前页面 */
+        .top-bar [data-netlify-identity-menu] {
+            font-size: 14px;
+        }
+        .top-bar [data-netlify-identity-menu] button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
         }
 
         h1 {
@@ -316,7 +371,22 @@
     </style>
 </head>
 <body>
-    <div class="container">
+
+    <!-- 未登录时显示的界面 -->
+    <div id="login-screen">
+        <h2>🔒 分切生产订单智能查询系统</h2>
+        <p>为了保护数据安全，请先登录您的账号</p>
+        <button onclick="window.netlifyIdentity.open()">点此登录 / 注册</button>
+    </div>
+
+    <!-- 登录后显示的受保护内容 -->
+    <div class="container" id="protected-content" style="display: none;">
+        
+        <!-- 顶部用户菜单栏（显示邮箱和退出按钮） -->
+        <div class="top-bar">
+            <div data-netlify-identity-menu></div>
+        </div>
+
         <h1>分切生产订单智能查询系统</h1>
 
         <!-- 文件信息 -->
@@ -393,11 +463,49 @@
         let filteredData = [];
         let currentFilter = 'all';
         let searchTimeout;
+        let isDataLoaded = false; // 防止重复加载
 
-        // 页面加载时读取CSV
-        window.onload = function() {
-            loadCSV('data.csv');
-        };
+        // 初始化 Netlify Identity 并处理登录状态
+        if (window.netlifyIdentity) {
+            // 页面初始化时检查用户状态
+            window.netlifyIdentity.on("init", user => {
+                if (!user) {
+                    // 未登录：显示登录界面，隐藏受保护内容
+                    document.getElementById("login-screen").style.display = "block";
+                    document.getElementById("protected-content").style.display = "none";
+                    // 自动弹出登录窗口（可选，如果想自动弹窗可以打开下面这行注释）
+                    // window.netlifyIdentity.open(); 
+                } else {
+                    // 已登录：隐藏登录界面，显示受保护内容并加载数据
+                    document.getElementById("login-screen").style.display = "none";
+                    document.getElementById("protected-content").style.display = "block";
+                    if (!isDataLoaded) {
+                        loadCSV('data.csv');
+                    }
+                }
+            });
+
+            // 登录成功后的回调
+            window.netlifyIdentity.on("login", user => {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("protected-content").style.display = "block";
+                window.netlifyIdentity.close(); // 关闭登录弹窗
+                if (!isDataLoaded) {
+                    loadCSV('data.csv');
+                }
+            });
+
+            // 退出登录后的回调
+            window.netlifyIdentity.on("logout", () => {
+                document.getElementById("login-screen").style.display = "block";
+                document.getElementById("protected-content").style.display = "none";
+                // 清空数据保护隐私
+                allData = [];
+                filteredData = [];
+                isDataLoaded = false;
+                document.getElementById('tableContainer').innerHTML = '<div class="loading">正在加载数据...</div>';
+            });
+        }
 
         // 加载CSV文件
         function loadCSV(filename) {
@@ -415,6 +523,7 @@
                     parseCSV(csvText);
                     document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
                     showError(false);
+                    isDataLoaded = true;
                 })
                 .catch(error => {
                     console.error('加载失败:', error);
