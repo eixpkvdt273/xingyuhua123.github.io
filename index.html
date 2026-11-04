@@ -2,6 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=98e1c876-de4f-45d1-9b52-40eced010128
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>邢玉华个人网页</title>
     <!-- Netlify Identity 脚本 -->
@@ -538,29 +541,28 @@
         }
 
         // 解析CSV
+        // 注意：不能按 '\n' 切行后再逐行解析。车间备注/计划备注里存在换行，
+        // 这种行在 CSV 中是被引号包裹的，属于同一条记录；按行切会把 1 条拆成 2 条，
+        // 导致"总订单数"虚增（当前数据里固定多出 10 条）。
         function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            if (lines.length === 0) return;
+            const rows = parseCSVRecords(csvText);
+            if (rows.length === 0) return;
 
             // 解析表头（第一行）
-            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').replace(/^\uFEFF/, ''));
-            
+            const headers = rows[0].map(h => h.trim().replace(/^\uFEFF/, ''));
+
             // 解析数据行
             allData = [];
-            for (let i = 1; i < lines.length; i++) {
-                if (lines[i].trim() === '') continue;
-                
-                const values = parseCSVLine(lines[i]);
+            for (let i = 1; i < rows.length; i++) {
+                const values = rows[i];
+                // 跳过完全空白的行
+                if (values.length === 1 && values[0].trim() === '') continue;
+
                 const row = {};
-                
                 headers.forEach((header, index) => {
-                    if (index < values.length) {
-                        row[header] = values[index].trim().replace(/^"|"$/g, '');
-                    } else {
-                        row[header] = '';
-                    }
+                    row[header] = index < values.length ? values[index].trim() : '';
                 });
-                
+
                 allData.push(row);
             }
 
@@ -571,27 +573,50 @@
             showLoading(false);
         }
 
-        // 解析CSV行（处理引号内的逗号）
-        function parseCSVLine(line) {
-            const result = [];
-            let current = '';
+        // 真正符合 RFC4180 的 CSV 解析：支持字段内的逗号、换行、以及 "" 转义
+        function parseCSVRecords(text) {
+            const rows = [];
+            let row = [];
+            let field = '';
             let inQuotes = false;
-            
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    result.push(current);
-                    current = '';
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (text[i + 1] === '"') {   // 转义的双引号 ""
+                            field += '"';
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        field += char;
+                    }
+                } else if (char === '"') {
+                    inQuotes = true;
+                } else if (char === ',') {
+                    row.push(field);
+                    field = '';
+                } else if (char === '\n') {
+                    row.push(field);
+                    rows.push(row);
+                    row = [];
+                    field = '';
+                } else if (char === '\r') {
+                    // 忽略 CR，按 LF 分行
                 } else {
-                    current += char;
+                    field += char;
                 }
             }
-            result.push(current);
-            
-            return result;
+
+            if (field !== '' || row.length > 0) {
+                row.push(field);
+                rows.push(row);
+            }
+
+            return rows;
         }
 
         // 更新统计信息
@@ -778,3 +803,4 @@
     </script>
 </body>
 </html>
+<script async src="/.netlify/scripts/hud?variant=public" data-nf-variant="public" data-netlify-site-id="98e1c876-de4f-45d1-9b52-40eced010128" data-app-host="app.netlify.com" data-account-tier="free"></script>
